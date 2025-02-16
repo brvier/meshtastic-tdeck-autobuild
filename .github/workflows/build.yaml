@@ -1,0 +1,56 @@
+name: Meshtastic T-Deck Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git wget python3-pip python3.11-venv libpython3-dev
+
+      - name: Install PlatformIO
+        run: |
+          wget -O get-platformio.py https://raw.githubusercontent.com/platformio/platformio-core-installer/master/get-platformio.py
+          python3 get-platformio.py
+          echo "$HOME/.platformio/penv/bin" >> $GITHUB_PATH
+
+      - name: Set up Python Virtual Environment
+        run: |
+          python3 -m venv meshtastic
+          source meshtastic/bin/activate
+
+      - name: Clone Meshtastic Firmware Repository
+        run: |
+          git clone --single-branch --recursive --branch tft-gui-work https://github.com/meshtastic/firmware.git
+          cd firmware
+          git submodule update --init --recursive --remote
+          cd lib/device-ui/
+          git pull origin master
+          git checkout master
+
+      - name: Build Firmware
+        run: |
+          cd firmware
+          /home/runner/.platformio/penv/bin/pio run -e t-deck-tft
+
+      - name: Upload Firmware Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-build
+          path: firmware/.pio/build/t-deck-tft/*.bin
+
