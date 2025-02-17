@@ -43,6 +43,10 @@ jobs:
           git pull origin master
           git checkout master
 
+      - name: Modify Configuration
+        run: |
+          sed -i 's/MESHTASTIC_EXCLUDE_SOCKETAPI=1/MESHTASTIC_EXCLUDE_SOCKETAPI=0/g' firmware/variants/t-deck/platformio.ini
+
       - name: Build Firmware
         run: |
           cd firmware
